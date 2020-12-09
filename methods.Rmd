@@ -57,7 +57,7 @@ cor(hate[,4:9])
 for(i in 4:8){
   plot(hate[,i],hate$Hate.Crime,main=colnames(hate)[i])
 }
-
+plot(reg)
 
 ```
 
