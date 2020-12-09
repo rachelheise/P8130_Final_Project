@@ -44,11 +44,6 @@ pairs(hate[,4:9],lower.panel=NULL)
 cor(hate[,4:9])
 #Percent white and percent non-white highly correlated
 
-##Check outliers
-hist(hate$Hate.Crime)
-hate[,c(1,9)]
-##DC has extreme outlier, probably delete
-hate = hate[-9,]
 
 ##Check linearity
 for(i in 4:8){
