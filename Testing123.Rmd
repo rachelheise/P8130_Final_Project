@@ -1,0 +1,8 @@
+---
+title: "Testing123"
+author: "Emil Hafeez (eh2928)"
+date: "12/10/2020"
+output: pdf_document
+---
+
+This is a test of the GitHub connection on the old Intel chip. 
