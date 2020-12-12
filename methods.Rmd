@@ -162,6 +162,20 @@ hate_df %>%
   pairs()
 ```
 
+# Simple Linear Regression Using Income Inequality (Per FiveThirtyEight)
+
+Fitting SLR using income inequality (measured by Gini index) per FiveThirtyEight findings.
+
+```{r}
+slr_income_lm = lm(hate_crimes_per_100k_splc ~ gini_index, data = hate_df)
+slr_income_log_lm = lm(log(hate_crimes_per_100k_splc) ~ gini_index, data = hate_df)
+
+summary(slr_income_lm)
+summary(slr_income_log_lm)
+```
+
+Gini index appears to be a significant predictor only when using the raw outcome data (not the log-transformed outcome data).
+
 # Jacy's Ideas
 
 ```{r eval = FALSE}
