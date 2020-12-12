@@ -110,6 +110,23 @@ hate_df %>%
 
 Looks better!
 
+Box plot of the (raw) outcome data.
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(y = hate_crimes_per_100k_splc)) +
+  geom_boxplot() +
+  labs(
+    y = "Hate Crimes per 100k"
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+    )
+```
+
+Just based on the boxplot, it ks like there are two states with potential usually high rates (Washington, DC and Oregon).
+
 # Examining Potential Multicollinearity
 
 ```{r}
