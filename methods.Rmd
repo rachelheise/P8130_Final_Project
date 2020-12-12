@@ -210,7 +210,7 @@ Normality looks better when we perform the log transformation on the outcome dat
 
 # Trying Stepwise Approach
 
-As a first step, trying stepwise approach.
+First, looking at the full model (with and without log transformation of outcome).
 
 ```{r}
 hate_nona_df = # Removing rows with missing values from the dataset
@@ -241,6 +241,14 @@ full_log_lm = lm(
   data = hate_nona_df
 )
 
+summary(full_lm)
+
+summary(full_log_lm)
+```
+
+Trying stepwise approach.
+
+```{r}
 step(full_lm, direction = "both") # Trying "both" directions
 
 step(full_log_lm, direction = "both") # Trying "both" directions
