@@ -10,9 +10,16 @@ library(tidyverse)
 theme_set(theme_minimal())
 ```
 
-```{r}
-library(tidyverse)
+Read in the data.
 
+```{r}
+hate_df = read_csv("./data/HateCrimes.csv")
+```
+
+
+Jacy's ideas:
+
+```{r eval = FALSE}
 ##Project ideas
 hate = read.csv("/Users/jacysparks/Downloads/HateCrimes.csv")
 head(hate)
