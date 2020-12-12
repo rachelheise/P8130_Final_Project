@@ -176,6 +176,50 @@ summary(slr_income_log_lm)
 
 Gini index appears to be a significant predictor only when using the raw outcome data (not the log-transformed outcome data).
 
+# Trying Stepwise Approach
+
+As a first step, trying stepwise approach.
+
+```{r}
+hate_nona_df = # Removing rows with missing values from the dataset
+  hate_df %>% 
+  drop_na()
+
+full_lm = lm(
+  hate_crimes_per_100k_splc
+  ~ unemployment + 
+    urbanization +
+    median_household_income +
+    perc_population_with_high_school_degree +
+    perc_non_citizen +
+    gini_index +
+    perc_non_white,
+  data = hate_nona_df
+)
+
+full_log_lm = lm(
+  log(hate_crimes_per_100k_splc)
+  ~ unemployment + 
+    urbanization +
+    median_household_income +
+    perc_population_with_high_school_degree +
+    perc_non_citizen +
+    gini_index +
+    perc_non_white,
+  data = hate_nona_df
+)
+
+step(full_lm, direction = "both") # Trying "both" directions
+
+step(full_log_lm, direction = "both") # Trying "both" directions
+```
+
+This procedure is retaining the following two predictors:
+
+* Precent population with high school degree
+
+* Gini index
+
 # Jacy's Ideas
 
 ```{r eval = FALSE}
