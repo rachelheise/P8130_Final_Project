@@ -311,3 +311,26 @@ plot(reg)
 
 ```
 
+
+Fit model based on stepwise (log transformed outcome data) and make a scatterplot with regression line, regenerate diagnostic plots using this model
+```{r}
+
+```
+
+Formalize if DC is an influential point quantitatively using the Cook’s value
+```{r}
+
+```
+
+Use Box-Cox method
+```{r}
+
+```
+
+Check for interactions
+```{r}
+
+```
+
+
+
