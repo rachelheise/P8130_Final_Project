@@ -6,6 +6,308 @@ output: pdf_document
 ```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
 library(tinytex)
 library(tidyverse)
+library(arsenal)
 
 theme_set(theme_minimal())
 ```
+
+# Data Cleaning
+
+```{r message = FALSE, warning = FALSE}
+hate_df =
+  read_csv("./data/HateCrimes.csv") %>% 
+  mutate(
+    state = as.factor(state),
+    unemployment = as.factor(unemployment),
+    urbanization = as.factor(urbanization),
+    hate_crimes_per_100k_splc = as.numeric(hate_crimes_per_100k_splc)
+  )
+```
+
+# Descriptive Statistics
+
+```{r}
+# Table labels
+my_labels =
+  list(
+    unemployment = "Unemployment",
+    urbanization = "Urbanization",
+    median_household_income = "Median Household Income",
+    perc_population_with_high_school_degree = "Percent with HS Degree",
+    perc_non_citizen = "Percent Non-Citizen",
+    gini_index = "Gini Index",
+    perc_non_white = "Percent Non-White",
+    hate_crimes_per_100k_splc = "Hate Crimes per 100k"
+)
+
+# Table controls
+my_controls = tableby.control(
+  total = F,
+  test = F,
+  numeric.stats = c("N", "meansd", "medianq1q3", "range", "Nmiss2"),
+  cat.stats = c("N", "countpct"),
+  stats.labels = list(
+    meansd = "Mean (SD)",
+    medianq1q3 = "Median (Q1, Q3)",
+    range = "Min - Max",
+    Nmiss2 = "Missing",
+    countpct = "N (%)",
+    N = "N"
+    )
+  )
+
+# Generate table
+descriptive_tab =
+  tableby( ~ unemployment + 
+           urbanization +
+           median_household_income +
+           perc_population_with_high_school_degree +
+           perc_non_citizen +
+           gini_index +
+           perc_non_white +
+           hate_crimes_per_100k_splc,
+           data = hate_df,
+           control = my_controls)
+
+summary(
+  descriptive_tab,
+  title = "Descriptive Statistics: Hate Crimes Data",
+  labelTranslations = my_labels,
+  text = T)
+```
+
+As a note, I didn't include the "states" variable as the output was huge and not that helpful. Suggest we include a note somewhere that data from 50 states + Washington, DC.
+
+# Distribution of Outcome Data
+
+Histogram of raw outcome data (hate crimes per 100k).
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(x = hate_crimes_per_100k_splc, y = ..density..)) +
+  geom_histogram(bins = 11) +
+  geom_density(alpha = 0.2, color = "blue") +
+  labs(
+    x = "Hate Crimes per 100k",
+    y = "Density"
+  )
+```
+
+These data look skewed :(
+
+Histogram of log-transformed outcome data (hate crimes per 100k).
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(x = log(hate_crimes_per_100k_splc), y = ..density..)) +
+  geom_histogram(bins = 11) +
+  geom_density(alpha = 0.2, color = "blue") +
+  labs(
+    x = "Hate Crimes per 100k (Log Scale)",
+    y = "Density"
+  )
+```
+
+Looks better!
+
+Box plot of the (raw) outcome data.
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(y = hate_crimes_per_100k_splc)) +
+  geom_boxplot() +
+  labs(
+    y = "Hate Crimes per 100k"
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+    )
+```
+
+Just based on the box plot, it looks like there are two states with potential usually high rates (Washington, DC and Oregon).
+
+# Examining Potential Multicollinearity
+
+```{r}
+hate_df %>% 
+  select(
+    hate_crimes_per_100k_splc,
+    median_household_income,
+    perc_population_with_high_school_degree,
+    perc_non_citizen,
+    gini_index,
+    perc_non_white
+    ) %>%
+  cor(use = "complete.obs") %>% # Ignoring NA values
+  round(., 2)
+```
+
+Based on this output, the following pairs of variables have a correlation of 60% or higher:
+
+* Percentage non-citizens & percentage non-white (0.75)
+
+* Median household income & percentage of population with a high school degree (0.65)
+
+```{r}
+hate_df %>% 
+  select(
+    hate_crimes_per_100k_splc,
+    median_household_income,
+    perc_population_with_high_school_degree,
+    perc_non_citizen,
+    gini_index,
+    perc_non_white
+    ) %>% 
+  pairs()
+```
+
+# Simple Linear Regression Using Income Inequality (Per FiveThirtyEight)
+
+Fitting SLR using income inequality (measured by Gini index) per FiveThirtyEight findings.
+
+```{r}
+slr_gini_lm = lm(hate_crimes_per_100k_splc ~ gini_index, data = hate_df)
+slr_gini_log_lm = lm(log(hate_crimes_per_100k_splc) ~ gini_index, data = hate_df)
+
+summary(slr_gini_lm)
+summary(slr_gini_log_lm)
+```
+
+Gini index appears to be a significant predictor only when using the raw outcome data (not the log-transformed outcome data).
+
+Scatter plots associated with these simple linear regression models.
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(x = gini_index, y = hate_crimes_per_100k_splc)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Gini Index",
+    y = "Hate Crimes per 100k"
+    ) +
+  geom_abline(intercept = -1.5275, slope = 4.0205)
+
+hate_df %>% 
+  ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Gini Index",
+    y = "Hate Crimes per 100k (Log Scale)"
+    ) +
+  geom_abline(intercept = -3.676, slope = 4.932)
+```
+
+Diagnostic plots of these two simple linear regression models.
+
+```{r}
+par(mfrow = c(2, 2))
+plot(slr_gini_lm)
+plot(slr_gini_log_lm)
+```
+
+Normality looks better when we perform the log transformation on the outcome data. However, for both versions of this model, we can see an outlying value in the upper right corner (this corresponds to Washington, DC).
+
+# Trying Stepwise Approach
+
+First, looking at the full model (with and without log transformation of outcome).
+
+```{r}
+hate_nona_df = # Removing rows with missing values from the dataset
+  hate_df %>% 
+  drop_na()
+
+full_lm = lm(
+  hate_crimes_per_100k_splc
+  ~ unemployment + 
+    urbanization +
+    median_household_income +
+    perc_population_with_high_school_degree +
+    perc_non_citizen +
+    gini_index +
+    perc_non_white,
+  data = hate_nona_df
+)
+
+full_log_lm = lm(
+  log(hate_crimes_per_100k_splc)
+  ~ unemployment + 
+    urbanization +
+    median_household_income +
+    perc_population_with_high_school_degree +
+    perc_non_citizen +
+    gini_index +
+    perc_non_white,
+  data = hate_nona_df
+)
+
+summary(full_lm)
+
+summary(full_log_lm)
+```
+
+Trying stepwise approach.
+
+```{r}
+step(full_lm, direction = "both") # Trying "both" directions
+
+step(full_log_lm, direction = "both") # Trying "both" directions
+```
+
+This procedure is retaining the following two predictors:
+
+* Precent population with high school degree
+
+* Gini index
+
+# Jacy's Ideas
+
+```{r eval = FALSE}
+##Project ideas
+hate = read.csv("/Users/jacysparks/Downloads/HateCrimes.csv")
+head(hate)
+dim(hate)
+hate$hate_crimes_per_100k_splc = as.character(hate$hate_crimes_per_100k_splc)
+hate$hate_crimes_per_100k_splc = as.numeric(hate$hate_crimes_per_100k_splc)
+summary(hate)
+##Four NA's for outcome
+##NA for Wyoming, South Dakota, North Dakota, and Idaho
+hate[,c(1,9)]
+##Could remove 
+hate = na.omit(hate)
+
+##3 NA's for non citizen
+
+
+##Create indicators
+names(hate)[names(hate)=="unemployment"] = "High.Unemployment"
+names(hate)[names(hate)=="urbanization"] = "High.Urban"
+names(hate)[names(hate)=="median_household_income"] = "Med.Income"
+names(hate)[names(hate)=="perc_population_with_high_school_degree"] = "HS.Degree"
+names(hate)[names(hate)=="perc_non_citizen"] = "Non.Citizen"
+names(hate)[names(hate)=="perc_non_white"] = "Non.White"
+names(hate)[names(hate)=="hate_crimes_per_100k_splc"] = "Hate.Crime"
+hate$High.Unemployment = ifelse(hate$High.Unemployment=="high",1,0)
+hate$High.Urban = ifelse(hate$High.Urban=="high",1,0)
+
+##Outcome var is skewed
+hate$Hate.Crime = log(hate$Hate.Crime)
+hist(hate$Hate.Crime)
+##Much better
+
+reg = lm(Hate.Crime~.-state,data=hate)
+summary(reg)
+
+pairs(hate[,4:9],lower.panel=NULL)
+cor(hate[,4:9])
+#Percent white and percent non-white highly correlated
+
+
+##Check linearity
+for(i in 4:8){
+  plot(hate[,i],hate$Hate.Crime,main=colnames(hate)[i])
+}
+plot(reg)
+
+```
+
