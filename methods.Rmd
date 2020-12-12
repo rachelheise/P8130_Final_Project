@@ -6,18 +6,146 @@ output: pdf_document
 ```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
 library(tinytex)
 library(tidyverse)
+library(arsenal)
 
 theme_set(theme_minimal())
 ```
 
-Read in the data.
+# Data Cleaning
 
-```{r}
-hate_df = read_csv("./data/HateCrimes.csv")
+```{r message = FALSE, warning = FALSE}
+hate_df =
+  read_csv("./data/HateCrimes.csv") %>% 
+  mutate(
+    state = as.factor(state),
+    unemployment = as.factor(unemployment),
+    urbanization = as.factor(urbanization),
+    hate_crimes_per_100k_splc = as.numeric(hate_crimes_per_100k_splc)
+  )
 ```
 
+# Descriptive Statistics
 
-Jacy's ideas:
+```{r}
+# Table labels
+my_labels =
+  list(
+    unemployment = "Antibody IgM",
+    urbanization = "Urbanization",
+    median_household_income = "Median Household Income",
+    perc_population_with_high_school_degree = "Percent with HS Degree",
+    perc_non_citizen = "Percent Non-Citizen",
+    gini_index = "Gini Index",
+    perc_non_white = "Percent Non-White",
+    hate_crimes_per_100k_splc = "Hate Crimes per 100k"
+)
+
+# Table controls
+my_controls = tableby.control(
+  total = F,
+  test = F,
+  numeric.stats = c("N", "meansd", "medianq1q3", "range", "Nmiss2"),
+  cat.stats = c("N", "countpct"),
+  stats.labels = list(
+    meansd = "Mean (SD)",
+    medianq1q3 = "Median (Q1, Q3)",
+    range = "Min - Max",
+    Nmiss2 = "Missing",
+    countpct = "N (%)",
+    N = "N"
+    )
+  )
+
+# Generate table
+descriptive_tab =
+  tableby( ~ unemployment + 
+           urbanization +
+           median_household_income +
+           perc_population_with_high_school_degree +
+           perc_non_citizen +
+           gini_index +
+           perc_non_white +
+           hate_crimes_per_100k_splc,
+           data = hate_df,
+           control = my_controls)
+
+summary(
+  descriptive_tab,
+  title = "Descriptive Statistics: Hate Crimes Data",
+  labelTranslations = my_labels,
+  text = T)
+```
+
+As a note, I didn't include the "states" variable as the output was huge and not that helpful. Suggest we include a note somewhere that data from 50 states + Washington, DC.
+
+# Distribution of Outcome Data
+
+Histogram of raw outcome data (hate crimes per 100k).
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(x = hate_crimes_per_100k_splc, y = ..density..)) +
+  geom_histogram(bins = 11) +
+  geom_density(alpha = 0.2, color = "blue") +
+  labs(
+    x = "Hate Crimes per 100k",
+    y = "Density"
+  )
+```
+
+These data look skewed :(
+
+Histogram of log-transformed outcome data (hate crimes per 100k).
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(x = log(hate_crimes_per_100k_splc), y = ..density..)) +
+  geom_histogram(bins = 11) +
+  geom_density(alpha = 0.2, color = "blue") +
+  labs(
+    x = "Hate Crimes per 100k (Log Scale)",
+    y = "Density"
+  )
+```
+
+Looks better!
+
+# Examining Potential Multicollinearity
+
+```{r}
+hate_df %>% 
+  select(
+    hate_crimes_per_100k_splc,
+    median_household_income,
+    perc_population_with_high_school_degree,
+    perc_non_citizen,
+    gini_index,
+    perc_non_white
+    ) %>%
+  cor(use = "complete.obs") %>% # Ignoring NA values
+  round(., 2)
+```
+
+Based on this output, the following pairs of variables have a correlation of 60% or higher:
+
+* Percentage non-citizens & percentage non-white (0.75)
+
+* Median household income & percentage of population with a high school degree (0.65)
+
+```{r}
+hate_df %>% 
+  select(
+    hate_crimes_per_100k_splc,
+    median_household_income,
+    perc_population_with_high_school_degree,
+    perc_non_citizen,
+    gini_index,
+    perc_non_white
+    ) %>% 
+  pairs()
+```
+
+# Jacy's Ideas
 
 ```{r eval = FALSE}
 ##Project ideas
