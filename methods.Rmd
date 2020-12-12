@@ -206,7 +206,7 @@ plot(slr_gini_lm)
 plot(slr_gini_log_lm)
 ```
 
-Normality looks better when we perform the log transformation on the outcome data. However, for both versions of this model, we can see an outlying value in the upper right corner.
+Normality looks better when we perform the log transformation on the outcome data. However, for both versions of this model, we can see an outlying value in the upper right corner (this corresponds to Washington, DC).
 
 # Trying Stepwise Approach
 
