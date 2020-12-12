@@ -30,7 +30,7 @@ hate_df =
 # Table labels
 my_labels =
   list(
-    unemployment = "Antibody IgM",
+    unemployment = "Unemployment",
     urbanization = "Urbanization",
     median_household_income = "Median Household Income",
     perc_population_with_high_school_degree = "Percent with HS Degree",
