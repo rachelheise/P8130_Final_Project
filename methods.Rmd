@@ -318,8 +318,18 @@ Fit model based on stepwise (log transformed outcome data) and make a scatterplo
 ```
 
 Formalize if DC is an influential point quantitatively using the Cook’s value
-```{r}
 
+Using Cook's D and studentized residuals, DC is not a cause for concern. Cook's D is 0.332, not high enough for concern. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1. Could be cause for concern. Regression analysis shows it is not influential, so no need to delete.
+```{r}
+plot(full_log_lm)
+influence.measures(full_log_lm)
+stu_res<-rstandard(full_log_lm)
+outliers_y<-stu_res[abs(stu_res)>2.5]
+outliers_y
+
+summary(full_log_lm)
+full_nodc = lm(log(hate_crimes_per_100k_splc)~.-state,data=hate_nona_df)
+summary(full_nodc)
 ```
 
 Use Box-Cox method
