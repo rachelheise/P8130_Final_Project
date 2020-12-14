@@ -334,8 +334,26 @@ summary(full_nodc)
 
 Use Box-Cox method
 ```{r}
+MASS::boxcox(full_lm) # default grid of lambdas is -2 to 2 by 0.1
 
+# Could change grid of lambda values just to zoom in, get more precise
+MASS::boxcox(full_lm, lambda = seq(-1, 1, by=0.05) ) 
+
+
+## i'll just QQ plot these as she does in lecture
+
+qqnorm(resid(full_lm), xlab = "Expected Value", ylab = "Residual", main = "")
+qqline(resid(full_lm))
+title("(a) QQ Plot for Y (Hate Crimes per 100k)")
+
+qqnorm(resid(full_log_lm), xlab = "Expected Value", ylab = "Residual", main = "")
+qqline(resid(full_log_lm))
+title("(d) QQ Plot lnY (Ln(Hate Crimes per 100k)")
+
+#Note that this is not strictly better. It's up for interpretation. 
 ```
+The optimal value of Y^a is near 0, indicating that a natural log transformation of the outcome  for all practical intents and purposes is optimal. We proceed with the log transformation. 
+
 
 Check for interactions
 ```{r}
