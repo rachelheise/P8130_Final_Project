@@ -356,8 +356,58 @@ The optimal value of Y^a is near 0, indicating that a natural log transformation
 
 
 Check for interactions
-```{r}
 
+Fit a linear model with all two-way interactions and investigated the interactions which were significant. There were two where there was a significant interaction between a categorical and continuous variable, between median household income and unemployment, and median household income and urbanization. Looking at the interaction plots between these variables we do see that the lines for the two levels of the categorical variables cross, indicating interaction. Stratifying on unemployment we see that the coefficient for median household income is positive when unemployment is low and negative when unemployment is high. When we stratify on urbanization, we see that the coefficient for median household income has a higher magnitude when urbanization is low (although both coefficients are negative). These stratified analyses indicate that interactions do exist.
+```{r}
+full_int_lm = lm(log(hate_crimes_per_100k_splc)~(.-state)^2, data = hate_nona_df)
+summary(full_int_lm)
+
+hate_nona_df %>% 
+  ggplot(aes(x = median_household_income, y = log(hate_crimes_per_100k_splc), color = unemployment)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+hate_nona_df %>% 
+  ggplot(aes(x = median_household_income, y = log(hate_crimes_per_100k_splc), color = urbanization)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+# Stratified analysis for unemployment
+
+unemployment_low = hate_nona_df %>% 
+  filter(unemployment == "low") %>% 
+  select(-unemployment)
+
+unemployment_high = hate_nona_df %>% 
+  filter(unemployment == "high") %>% 
+  select(-unemployment)
+
+unemployment_low_lm = lm(log(hate_crimes_per_100k_splc)~.-state, data = unemployment_low)
+summary(unemployment_low_lm)
+
+unemployment_high_lm = lm(log(hate_crimes_per_100k_splc)~.-state, data = unemployment_high)
+summary(unemployment_high_lm)
+
+## Median household income coefficients have different signs when unemployment is low vs high
+
+urbanization_low = hate_nona_df %>% 
+  filter(urbanization == "low") %>% 
+  select(-urbanization)
+
+urbanization_high = hate_nona_df %>% 
+  filter(urbanization == "high") %>% 
+  select(-urbanization)
+
+# Stratified analysis for urbanization
+
+urbanization_low_lm = lm(log(hate_crimes_per_100k_splc)~.-state, data = urbanization_low)
+summary(urbanization_low_lm)
+
+urbanization_high_lm = lm(log(hate_crimes_per_100k_splc)~.-state, data = urbanization_high)
+summary(urbanization_high_lm)
+
+## Median household income coefficients have different magnitudes when urbanization is low vs high
+```
 ```
 
 
