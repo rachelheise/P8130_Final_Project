@@ -313,8 +313,33 @@ plot(reg)
 
 
 Fit model based on stepwise (log transformed outcome data) and make a scatterplot with regression line, regenerate diagnostic plots using this model
-```{r}
+```{r stepwise}
+stepwise_log_lm = lm(
+  log(hate_crimes_per_100k_splc)
+  ~ perc_population_with_high_school_degree + # Question - which is the main predictor we're putting on the x axis?
+    gini_index,
+  data = hate_nona_df)
 
+hate_nona_df %>% 
+  ggplot(aes(x = perc_population_with_high_school_degree, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Percentage of Population with High School Degree",
+    y = "Hate Crimes per 100k (Log Scale)"
+    ) +
+  geom_abline(intercept = -18.947, slope = 11.554) # ab line not showing up...
+
+hate_nona_df %>% 
+  ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Gini Index",
+    y = "Hate Crimes per 100k (Log Scale)"
+    ) +
+  geom_abline(intercept = -18.947, slope = 16.486) # ab line not showing up...
+
+par(mfrow = c(2, 2))
+plot(stepwise_log_lm)
 ```
 
 Formalize if DC is an influential point quantitatively using the Cook’s value
