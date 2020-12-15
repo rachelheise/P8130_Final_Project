@@ -327,7 +327,8 @@ hate_nona_df %>%
     x = "Percentage of Population with High School Degree",
     y = "Hate Crimes per 100k (Log Scale)"
     ) +
-  geom_abline(intercept = -18.947, slope = 11.554) # ab line not showing up...
+  geom_abline(intercept = -18.947, slope = 11.554)
+  # ab line not showing up...
 
 hate_nona_df %>% 
   ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
@@ -390,12 +391,18 @@ summary(full_int_lm)
 hate_nona_df %>% 
   ggplot(aes(x = median_household_income, y = log(hate_crimes_per_100k_splc), color = unemployment)) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE)
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Median Household Income",
+       y = "log(Hate Crimes Per 100k splc)",
+       title = "Interaction Plot for Unemployment and Median Household Income")
 
 hate_nona_df %>% 
   ggplot(aes(x = median_household_income, y = log(hate_crimes_per_100k_splc), color = urbanization)) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE)
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Median Household Income",
+       y = "log(Hate Crimes Per 100k splc)",
+       title = "Interaction Plot for Urbanization and Median Household Income")
 
 # Stratified analysis for unemployment
 
@@ -433,6 +440,15 @@ summary(urbanization_high_lm)
 
 ## Median household income coefficients have different magnitudes when urbanization is low vs high
 ```
+
+I tried including these interaction terms in the full model with gini index and percent of population with high school degree; none of these interactions were significant so they were omitted in the full model.
+```{r}
+interaction_log_lm = lm(
+  log(hate_crimes_per_100k_splc)
+  ~ perc_population_with_high_school_degree + gini_index + median_household_income + unemployment + urbanization + median_household_income*unemployment + median_household_income*urbanization,
+  data = hate_nona_df)
+
+summary(interaction_log_lm)
 ```
 
 
