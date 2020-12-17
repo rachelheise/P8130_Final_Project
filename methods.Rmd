@@ -1,6 +1,8 @@
 ---
 title: "Methods"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
@@ -71,7 +73,7 @@ descriptive_tab =
 
 summary(
   descriptive_tab,
-  title = "Descriptive Statistics: Hate Crimes Data",
+  title = "Table 1: Descriptive Statistics: Hate Crimes Data",
   labelTranslations = my_labels,
   text = T)
 ```
