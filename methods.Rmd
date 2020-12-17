@@ -261,7 +261,13 @@ Check model assumptions after removing DC as a point.
 par(mfrow = c(2, 2))
 plot(full_nodc)
 ```
+See if Gini index is significant by itself, with a log transformed outcome and DC point removed.
 
+```{r}
+gini_nodc_lm = lm(log(hate_crimes_per_100k_splc) ~ gini_index, data = hate_nona_df[-9,])
+summary(gini_nodc_lm)
+```
+Gini index is not significant in this model.
 
 # Interactions
 
