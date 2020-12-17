@@ -13,6 +13,8 @@ theme_set(theme_minimal())
 
 # Data Cleaning
 
+Read and clean hate crime data.
+
 ```{r message = FALSE, warning = FALSE}
 hate_df =
   read_csv("./data/HateCrimes.csv") %>% 
@@ -25,6 +27,8 @@ hate_df =
 ```
 
 # Descriptive Statistics
+
+Create table of descriptive statistics.
 
 ```{r}
 # Table labels
@@ -75,12 +79,17 @@ summary(
   labelTranslations = my_labels,
   text = T)
 ```
+# Remove Missing Data
 
-As a note, I didn't include the "states" variable as the output was huge and not that helpful. Suggest we include a note somewhere that data from 50 states + Washington, DC.
+```{r}
+hate_nona_df = # Removing rows with missing values from the dataset
+  hate_df %>% 
+  drop_na()
+```
 
 # Distribution of Outcome Data
 
-Histogram of raw outcome data (hate crimes per 100k).
+Plot a histogram of raw outcome data (hate crimes per 100k) to assess distribution shape.
 
 ```{r message = FALSE, warning = FALSE}
 hate_df %>% 
@@ -89,13 +98,37 @@ hate_df %>%
   geom_density(alpha = 0.2, color = "blue") +
   labs(
     x = "Hate Crimes per 100k",
-    y = "Density"
+    y = "Density",
+    title = "Histogram of Hate Crimes Data"
   )
 ```
 
-These data look skewed :(
+These data look skewed, so we use the Box-Cox method to determine the best transformation for the data. First, fit a linear model with all main effects.
 
-Histogram of log-transformed outcome data (hate crimes per 100k).
+```{r}
+full_lm = lm(
+  hate_crimes_per_100k_splc
+  ~ unemployment + 
+    urbanization +
+    median_household_income +
+    perc_population_with_high_school_degree +
+    perc_non_citizen +
+    gini_index +
+    perc_non_white,
+  data = hate_nona_df
+)
+```
+
+Run boxcox on this model.
+
+```{r}
+MASS::boxcox(full_lm)
+```
+
+The optimal value of $Y^a$ is near 0, indicating that a natural log transformation of the outcome for all practical intents and purposes is best. We proceed with the log transformation. 
+
+
+Create a histogram of log-transformed outcome data (hate crimes per 100k).
 
 ```{r message = FALSE, warning = FALSE}
 hate_df %>% 
@@ -104,30 +137,16 @@ hate_df %>%
   geom_density(alpha = 0.2, color = "blue") +
   labs(
     x = "Hate Crimes per 100k (Log Scale)",
-    y = "Density"
+    y = "Density",
+    title = "Histogram of Hate Crimes Per 100k on Log Scale"
   )
 ```
 
-Looks better!
-
-Box plot of the (raw) outcome data.
-
-```{r message = FALSE, warning = FALSE}
-hate_df %>% 
-  ggplot(aes(y = hate_crimes_per_100k_splc)) +
-  geom_boxplot() +
-  labs(
-    y = "Hate Crimes per 100k"
-  ) +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank()
-    )
-```
-
-Just based on the box plot, it looks like there are two states with potential usually high rates (Washington, DC and Oregon).
+This plot looks less skewed.
 
 # Examining Potential Multicollinearity
+
+Examine correlations between predictors.
 
 ```{r}
 hate_df %>% 
@@ -149,6 +168,8 @@ Based on this output, the following pairs of variables have a correlation of 60%
 
 * Median household income & percentage of population with a high school degree (0.65)
 
+Use a pairs plot to visually assess potential multicollinearity.
+
 ```{r}
 hate_df %>% 
   select(
@@ -162,73 +183,11 @@ hate_df %>%
   pairs()
 ```
 
-# Simple Linear Regression Using Income Inequality (Per FiveThirtyEight)
+# Selecting a Model Using the Stepwise Approach
 
-Fitting SLR using income inequality (measured by Gini index) per FiveThirtyEight findings.
-
-```{r}
-slr_gini_lm = lm(hate_crimes_per_100k_splc ~ gini_index, data = hate_df)
-slr_gini_log_lm = lm(log(hate_crimes_per_100k_splc) ~ gini_index, data = hate_df)
-
-summary(slr_gini_lm)
-summary(slr_gini_log_lm)
-```
-
-Gini index appears to be a significant predictor only when using the raw outcome data (not the log-transformed outcome data).
-
-Scatter plots associated with these simple linear regression models.
-
-```{r message = FALSE, warning = FALSE}
-hate_df %>% 
-  ggplot(aes(x = gini_index, y = hate_crimes_per_100k_splc)) +
-  geom_point(color = "blue", alpha = 0.6) +
-  labs(
-    x = "Gini Index",
-    y = "Hate Crimes per 100k"
-    ) +
-  geom_abline(intercept = -1.5275, slope = 4.0205)
-
-hate_df %>% 
-  ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
-  geom_point(color = "blue", alpha = 0.6) +
-  labs(
-    x = "Gini Index",
-    y = "Hate Crimes per 100k (Log Scale)"
-    ) +
-  geom_abline(intercept = -3.676, slope = 4.932)
-```
-
-Diagnostic plots of these two simple linear regression models.
+First, consider all main effects in the model, using a log transformation of the outcome.
 
 ```{r}
-par(mfrow = c(2, 2))
-plot(slr_gini_lm)
-plot(slr_gini_log_lm)
-```
-
-Normality looks better when we perform the log transformation on the outcome data. However, for both versions of this model, we can see an outlying value in the upper right corner (this corresponds to Washington, DC).
-
-# Trying Stepwise Approach
-
-First, looking at the full model (with and without log transformation of outcome).
-
-```{r}
-hate_nona_df = # Removing rows with missing values from the dataset
-  hate_df %>% 
-  drop_na()
-
-full_lm = lm(
-  hate_crimes_per_100k_splc
-  ~ unemployment + 
-    urbanization +
-    median_household_income +
-    perc_population_with_high_school_degree +
-    perc_non_citizen +
-    gini_index +
-    perc_non_white,
-  data = hate_nona_df
-)
-
 full_log_lm = lm(
   log(hate_crimes_per_100k_splc)
   ~ unemployment + 
@@ -241,153 +200,74 @@ full_log_lm = lm(
   data = hate_nona_df
 )
 
-summary(full_lm)
-
 summary(full_log_lm)
 ```
 
-Trying stepwise approach.
+Use the Stepwise approach.
 
-```{r}
-step(full_lm, direction = "both") # Trying "both" directions
-
-step(full_log_lm, direction = "both") # Trying "both" directions
+```{r, results = FALSE}
+step(full_log_lm, direction = "both")
 ```
 
-This procedure is retaining the following two predictors:
+This procedure retains the following two predictors:
 
 * Precent population with high school degree
 
 * Gini index
 
-# Jacy's Ideas
 
-```{r eval = FALSE}
-##Project ideas
-hate = read.csv("/Users/jacysparks/Downloads/HateCrimes.csv")
-head(hate)
-dim(hate)
-hate$hate_crimes_per_100k_splc = as.character(hate$hate_crimes_per_100k_splc)
-hate$hate_crimes_per_100k_splc = as.numeric(hate$hate_crimes_per_100k_splc)
-summary(hate)
-##Four NA's for outcome
-##NA for Wyoming, South Dakota, North Dakota, and Idaho
-hate[,c(1,9)]
-##Could remove 
-hate = na.omit(hate)
-
-##3 NA's for non citizen
-
-
-##Create indicators
-names(hate)[names(hate)=="unemployment"] = "High.Unemployment"
-names(hate)[names(hate)=="urbanization"] = "High.Urban"
-names(hate)[names(hate)=="median_household_income"] = "Med.Income"
-names(hate)[names(hate)=="perc_population_with_high_school_degree"] = "HS.Degree"
-names(hate)[names(hate)=="perc_non_citizen"] = "Non.Citizen"
-names(hate)[names(hate)=="perc_non_white"] = "Non.White"
-names(hate)[names(hate)=="hate_crimes_per_100k_splc"] = "Hate.Crime"
-hate$High.Unemployment = ifelse(hate$High.Unemployment=="high",1,0)
-hate$High.Urban = ifelse(hate$High.Urban=="high",1,0)
-
-##Outcome var is skewed
-hate$Hate.Crime = log(hate$Hate.Crime)
-hist(hate$Hate.Crime)
-##Much better
-
-reg = lm(Hate.Crime~.-state,data=hate)
-summary(reg)
-
-pairs(hate[,4:9],lower.panel=NULL)
-cor(hate[,4:9])
-#Percent white and percent non-white highly correlated
-
-
-##Check linearity
-for(i in 4:8){
-  plot(hate[,i],hate$Hate.Crime,main=colnames(hate)[i])
-}
-plot(reg)
-
-```
-
-
-Fit model based on stepwise (log transformed outcome data) and make a scatterplot with regression line, regenerate diagnostic plots using this model
+Fit a linear regression model based on the results of the stepwise procedure.
 ```{r stepwise}
 stepwise_log_lm = lm(
   log(hate_crimes_per_100k_splc)
-  ~ perc_population_with_high_school_degree + # Question - which is the main predictor we're putting on the x axis?
+  ~ perc_population_with_high_school_degree +
     gini_index,
   data = hate_nona_df)
+```
 
-hate_nona_df %>% 
-  ggplot(aes(x = perc_population_with_high_school_degree, y = log(hate_crimes_per_100k_splc))) +
-  geom_point(color = "blue", alpha = 0.6) +
-  labs(
-    x = "Percentage of Population with High School Degree",
-    y = "Hate Crimes per 100k (Log Scale)"
-    ) +
-  geom_abline(intercept = -18.947, slope = 11.554)
-  # ab line not showing up...
-
-hate_nona_df %>% 
-  ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
-  geom_point(color = "blue", alpha = 0.6) +
-  labs(
-    x = "Gini Index",
-    y = "Hate Crimes per 100k (Log Scale)"
-    ) +
-  geom_abline(intercept = -18.947, slope = 16.486) # ab line not showing up...
-
+Check model assumptions using this model.
+```{r}
 par(mfrow = c(2, 2))
 plot(stepwise_log_lm)
 ```
 
+# Influential Points
+
+Determine if DC is an influential point quantitatively using the Cook’s value.
+
+```{r}
+par(mfrow = c(2, 2))
+plot(full_log_lm)
+```
+Check for influential points and create a dataframe without the Washington, DC point to see what impact that has on the model.
+
 Formalize if DC is an influential point quantitatively using the Cook’s value
 
-Using Cook's D and studentized residuals, DC is not a cause for concern. Cook's D is 0.332, not high enough for concern. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1. Could be cause for concern. Regression analysis shows it is not influential, so no need to delete.
+Using Cook's D and studentized residuals, DC could be an influential point. Cook's D is 0.491, close to the threshold of 0.5. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1. Could be cause for concern. Regression analysis shows it is influential, so need to delete.
 ```{r}
-plot(full_log_lm)
-influence.measures(full_log_lm)
-stu_res<-rstandard(full_log_lm)
+plot(stepwise_log_lm)
+influence.measures(stepwise_log_lm)
+stu_res<-rstandard(stepwise_log_lm)
 outliers_y<-stu_res[abs(stu_res)>2.5]
 outliers_y
 
-summary(full_log_lm)
-full_nodc = lm(log(hate_crimes_per_100k_splc)~.-state,data=hate_nona_df)
+summary(stepwise_log_lm)
+full_nodc = lm(log(hate_crimes_per_100k_splc)~perc_population_with_high_school_degree+gini_index,data=hate_nona_df[-9,])
 summary(full_nodc)
 ```
 
-Use Box-Cox method
-```{r}
-MASS::boxcox(full_lm) # default grid of lambdas is -2 to 2 by 0.1
+# Interactions
 
-# Could change grid of lambda values just to zoom in, get more precise
-MASS::boxcox(full_lm, lambda = seq(-1, 1, by=0.05) ) 
+Check for interactions.
 
-
-## i'll just QQ plot these as she does in lecture
-
-qqnorm(resid(full_lm), xlab = "Expected Value", ylab = "Residual", main = "")
-qqline(resid(full_lm))
-title("(a) QQ Plot for Y (Hate Crimes per 100k)")
-
-qqnorm(resid(full_log_lm), xlab = "Expected Value", ylab = "Residual", main = "")
-qqline(resid(full_log_lm))
-title("(d) QQ Plot lnY (Ln(Hate Crimes per 100k)")
-
-#Note that this is not strictly better. It's up for interpretation. 
-```
-The optimal value of Y^a is near 0, indicating that a natural log transformation of the outcome  for all practical intents and purposes is optimal. We proceed with the log transformation. 
-
-
-Check for interactions
-
-Fit a linear model with all two-way interactions and investigated the interactions which were significant. There were two where there was a significant interaction between a categorical and continuous variable, between median household income and unemployment, and median household income and urbanization. Looking at the interaction plots between these variables we do see that the lines for the two levels of the categorical variables cross, indicating interaction. Stratifying on unemployment we see that the coefficient for median household income is positive when unemployment is low and negative when unemployment is high. When we stratify on urbanization, we see that the coefficient for median household income has a higher magnitude when urbanization is low (although both coefficients are negative). These stratified analyses indicate that interactions do exist.
-```{r}
+Fit a linear model with all two-way interactions and investigate which interactions are significant.
+```{r, results = FALSE}
 full_int_lm = lm(log(hate_crimes_per_100k_splc)~(.-state)^2, data = hate_nona_df)
 summary(full_int_lm)
+```
 
+
+```{r, results = FALSE}
 hate_nona_df %>% 
   ggplot(aes(x = median_household_income, y = log(hate_crimes_per_100k_splc), color = unemployment)) +
   geom_point() +
@@ -403,7 +283,12 @@ hate_nona_df %>%
   labs(x = "Median Household Income",
        y = "log(Hate Crimes Per 100k splc)",
        title = "Interaction Plot for Urbanization and Median Household Income")
+```
 
+There were three significant interactions, two of which occur between a categorical and continuous variable, between median household income and unemployment, and median household income and urbanization. Looking at the interaction plots between these variables we do see that the lines for the two levels of the categorical variables cross, indicating interaction. 
+
+Perform a stratified analysis on these 
+```{r}
 # Stratified analysis for unemployment
 
 unemployment_low = hate_nona_df %>% 
@@ -419,8 +304,11 @@ summary(unemployment_low_lm)
 
 unemployment_high_lm = lm(log(hate_crimes_per_100k_splc)~.-state, data = unemployment_high)
 summary(unemployment_high_lm)
+```
 
-## Median household income coefficients have different signs when unemployment is low vs high
+Median household income coefficients have different signs when unemployment is low vs high
+
+```{r}
 
 urbanization_low = hate_nona_df %>% 
   filter(urbanization == "low") %>% 
@@ -440,16 +328,21 @@ summary(urbanization_high_lm)
 
 ## Median household income coefficients have different magnitudes when urbanization is low vs high
 ```
+Stratifying on unemployment we see that the coefficient for median household income is positive when unemployment is low and negative when unemployment is high. When we stratify on urbanization, we see that the coefficient for median household income has a higher magnitude when urbanization is low (although both coefficients are negative). These stratified analyses indicate that interactions do exist.
 
-I tried including these interaction terms in the full model with gini index and percent of population with high school degree; none of these interactions were significant so they were omitted in the full model.
+Include these interaction terms in the full model to check for significance.
 ```{r}
 interaction_log_lm = lm(
   log(hate_crimes_per_100k_splc)
-  ~ perc_population_with_high_school_degree + gini_index + median_household_income + unemployment + urbanization + median_household_income*unemployment + median_household_income*urbanization,
+  ~ perc_population_with_high_school_degree
+  + gini_index
+  + median_household_income 
+  + unemployment + urbanization 
+  + median_household_income*unemployment 
+  + median_household_income*urbanization,
   data = hate_nona_df)
 
 summary(interaction_log_lm)
 ```
 
-
-
+Holding Gini index and percent of population with high school degree constant, both interactions are not significant predictors of hate crime incidents. They are not included in the final model.

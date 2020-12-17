@@ -1,0 +1,194 @@
+---
+title: "Archive"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Descriptive Statistics
+
+As a note, I didn't include the "states" variable as the output was huge and not that helpful. Suggest we include a note somewhere that data from 50 states + Washington, DC.
+
+# Distribution of Outcome Data
+
+Box plot of the (raw) outcome data.
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(y = hate_crimes_per_100k_splc)) +
+  geom_boxplot() +
+  labs(
+    y = "Hate Crimes per 100k"
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+    )
+```
+
+Just based on the box plot, it looks like there are two states with potential usually high rates (Washington, DC and Oregon).
+
+# Simple Linear Regression Using Income Inequality (Per FiveThirtyEight)
+
+Fitting SLR using income inequality (measured by Gini index) per FiveThirtyEight findings.
+
+```{r}
+slr_gini_lm = lm(hate_crimes_per_100k_splc ~ gini_index, data = hate_df)
+slr_gini_log_lm = lm(log(hate_crimes_per_100k_splc) ~ gini_index, data = hate_df)
+
+summary(slr_gini_lm)
+summary(slr_gini_log_lm)
+```
+
+Gini index appears to be a significant predictor only when using the raw outcome data (not the log-transformed outcome data).
+
+Scatter plots associated with these simple linear regression models.
+
+```{r message = FALSE, warning = FALSE}
+hate_df %>% 
+  ggplot(aes(x = gini_index, y = hate_crimes_per_100k_splc)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Gini Index",
+    y = "Hate Crimes per 100k"
+    ) +
+  geom_abline(intercept = -1.5275, slope = 4.0205)
+
+hate_df %>% 
+  ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Gini Index",
+    y = "Hate Crimes per 100k (Log Scale)"
+    ) +
+  geom_abline(intercept = -3.676, slope = 4.932)
+```
+
+Diagnostic plots of these two simple linear regression models.
+
+```{r}
+par(mfrow = c(2, 2))
+plot(slr_gini_lm)
+plot(slr_gini_log_lm)
+```
+
+Normality looks better when we perform the log transformation on the outcome data. However, for both versions of this model, we can see an outlying value in the upper right corner (this corresponds to Washington, DC).
+
+
+
+
+# Selecting a Model Using the Stepwise Approach
+
+```{r}
+full_lm = lm(
+  hate_crimes_per_100k_splc
+  ~ unemployment + 
+    urbanization +
+    median_household_income +
+    perc_population_with_high_school_degree +
+    perc_non_citizen +
+    gini_index +
+    perc_non_white,
+  data = hate_nona_df
+)
+
+summary(full_lm)
+
+step(full_lm, direction = "both") # Trying "both" directions
+
+```
+
+
+# Jacy's Ideas
+
+```{r eval = FALSE}
+##Project ideas
+hate = read.csv("/Users/jacysparks/Downloads/HateCrimes.csv")
+head(hate)
+dim(hate)
+hate$hate_crimes_per_100k_splc = as.character(hate$hate_crimes_per_100k_splc)
+hate$hate_crimes_per_100k_splc = as.numeric(hate$hate_crimes_per_100k_splc)
+summary(hate)
+##Four NA's for outcome
+##NA for Wyoming, South Dakota, North Dakota, and Idaho
+hate[,c(1,9)]
+##Could remove 
+hate = na.omit(hate)
+
+##3 NA's for non citizen
+
+
+##Create indicators
+names(hate)[names(hate)=="unemployment"] = "High.Unemployment"
+names(hate)[names(hate)=="urbanization"] = "High.Urban"
+names(hate)[names(hate)=="median_household_income"] = "Med.Income"
+names(hate)[names(hate)=="perc_population_with_high_school_degree"] = "HS.Degree"
+names(hate)[names(hate)=="perc_non_citizen"] = "Non.Citizen"
+names(hate)[names(hate)=="perc_non_white"] = "Non.White"
+names(hate)[names(hate)=="hate_crimes_per_100k_splc"] = "Hate.Crime"
+hate$High.Unemployment = ifelse(hate$High.Unemployment=="high",1,0)
+hate$High.Urban = ifelse(hate$High.Urban=="high",1,0)
+
+##Outcome var is skewed
+hate$Hate.Crime = log(hate$Hate.Crime)
+hist(hate$Hate.Crime)
+##Much better
+
+reg = lm(Hate.Crime~.-state,data=hate)
+summary(reg)
+
+pairs(hate[,4:9],lower.panel=NULL)
+cor(hate[,4:9])
+#Percent white and percent non-white highly correlated
+
+
+##Check linearity
+for(i in 4:8){
+  plot(hate[,i],hate$Hate.Crime,main=colnames(hate)[i])
+}
+plot(reg)
+
+```
+
+Create a scatterplot with regression line after performing stepwise regression.
+```{r}
+hate_nona_df %>% 
+  ggplot(aes(x = perc_population_with_high_school_degree, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Percentage of Population with High School Degree",
+    y = "Hate Crimes per 100k (Log Scale)"
+    ) +
+  geom_abline(intercept = -18.947, slope = 11.554)
+  # ab line not showing up...
+
+hate_nona_df %>% 
+  ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    x = "Gini Index",
+    y = "Hate Crimes per 100k (Log Scale)"
+    ) +
+  geom_abline(intercept = -18.947, slope = 16.486) # ab line not showing up...
+```
+
+# Box-cox transformation
+
+```{r}
+# Could change grid of lambda values just to zoom in, get more precise
+MASS::boxcox(full_lm, lambda = seq(-1, 1, by=0.05) ) 
+
+qqnorm(resid(full_lm), xlab = "Expected Value", ylab = "Residual", main = "")
+qqline(resid(full_lm))
+title("(a) QQ Plot for Y (Hate Crimes per 100k)")
+
+qqnorm(resid(full_log_lm), xlab = "Expected Value", ylab = "Residual", main = "")
+qqline(resid(full_log_lm))
+title("(d) QQ Plot lnY (Ln(Hate Crimes per 100k)")
+```
+
+# Influential Points
+
+However, DFFIT is greater than 1. Could be cause for concern. Regression analysis, however, shows it is not influential, so no need to remove from the model.
