@@ -2086,7 +2086,29 @@ summary(full_nodc)</code></pre>
 ## Residual standard error: 0.556 on 41 degrees of freedom
 ## Multiple R-squared:  0.1595, Adjusted R-squared:  0.1185 
 ## F-statistic: 3.889 on 2 and 41 DF,  p-value: 0.02841</code></pre>
-<p>Using Cook’s Distance and studentized residuals, DC could be an influential point. Cook’s Distance is 0.491, close to the threshold of 0.5. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1. Could be cause for concern. Regression analysis shows it is influential, so need to delete.</p>
+<pre class="r"><code># Re-fit model without Gini index variable
+hsdeg_lm_nodc = lm(log(hate_crimes_per_100k_splc) ~ perc_population_with_high_school_degree, data = hate_nona_df[-9,])
+summary(hsdeg_lm_nodc)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = log(hate_crimes_per_100k_splc) ~ perc_population_with_high_school_degree, 
+##     data = hate_nona_df[-9, ])
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -1.12633 -0.48978  0.08266  0.44786  1.14080 
+## 
+## Coefficients:
+##                                         Estimate Std. Error t value Pr(&gt;|t|)   
+## (Intercept)                               -6.413      2.274  -2.820   0.0073 **
+## perc_population_with_high_school_degree    5.712      2.623   2.178   0.0351 * 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.568 on 42 degrees of freedom
+## Multiple R-squared:  0.1015, Adjusted R-squared:  0.08009 
+## F-statistic: 4.744 on 1 and 42 DF,  p-value: 0.03507</code></pre>
+<p>Using Cook’s Distance and studentized residuals, DC could be an influential point. Cook’s Distance is 0.491, close to the threshold of 0.5. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1 for DC which could be cause for concern. Comparing the regression analysis shows that this point is influential, so we need to consider deleting it.</p>
 <p>Check model assumptions after removing DC as a point.</p>
 <pre class="r"><code>par(mfrow = c(2, 2))
 plot(full_nodc)</code></pre>

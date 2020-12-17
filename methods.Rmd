@@ -1,7 +1,7 @@
 ---
 title: "Methods"
 output:
-  html_document:
+  pdf_document:
     df_print: paged
 ---
 
@@ -248,9 +248,13 @@ outliers_y
 summary(stepwise_log_lm)
 full_nodc = lm(log(hate_crimes_per_100k_splc) ~ perc_population_with_high_school_degree + gini_index, data = hate_nona_df[-9,])
 summary(full_nodc)
+
+# Re-fit model without Gini index variable
+hsdeg_lm_nodc = lm(log(hate_crimes_per_100k_splc) ~ perc_population_with_high_school_degree, data = hate_nona_df[-9,])
+summary(hsdeg_lm_nodc)
 ```
 
-Using Cook's Distance and studentized residuals, DC could be an influential point. Cook's Distance is 0.491, close to the threshold of 0.5. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1. Could be cause for concern. Regression analysis shows it is influential, so need to delete.
+Using Cook's Distance and studentized residuals, DC could be an influential point. Cook's Distance is 0.491, close to the threshold of 0.5. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1 for DC which could be cause for concern. Comparing the regression analysis shows that this point is influential, so we need to consider deleting it.
 
 Check model assumptions after removing DC as a point.
 ```{r}
@@ -312,7 +316,6 @@ summary(unemployment_high_lm)
 Median household income coefficients have different signs when unemployment is low vs high
 
 ```{r}
-
 urbanization_low = hate_nona_df %>% 
   filter(urbanization == "low") %>% 
   select(-urbanization)
