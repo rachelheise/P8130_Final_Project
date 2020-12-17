@@ -347,16 +347,16 @@ plot(stepwise_log_lm)
 
 Formalize if DC is an influential point quantitatively using the Cook’s value
 
-Using Cook's D and studentized residuals, DC is not a cause for concern. Cook's D is 0.332, not high enough for concern. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1. Could be cause for concern. Regression analysis shows it is not influential, so no need to delete.
+Using Cook's D and studentized residuals, DC could be an influential point. Cook's D is 0.491, close to the threshold of 0.5. The studentized residual is not greater than 2.5 for any variable. However, DFFIT is greater than 1. Could be cause for concern. Regression analysis shows it is influential, so need to delete.
 ```{r}
-plot(full_log_lm)
-influence.measures(full_log_lm)
-stu_res<-rstandard(full_log_lm)
+plot(stepwise_log_lm)
+influence.measures(stepwise_log_lm)
+stu_res<-rstandard(stepwise_log_lm)
 outliers_y<-stu_res[abs(stu_res)>2.5]
 outliers_y
 
-summary(full_log_lm)
-full_nodc = lm(log(hate_crimes_per_100k_splc)~.-state,data=hate_nona_df)
+summary(stepwise_log_lm)
+full_nodc = lm(log(hate_crimes_per_100k_splc)~perc_population_with_high_school_degree+gini_index,data=hate_nona_df[-9,])
 summary(full_nodc)
 ```
 
