@@ -363,7 +363,7 @@ summary(interaction_log_lm)
 
 Holding Gini index and percent of population with high school degree constant, both interactions are not significant predictors of hate crime incidents. They are not included in the final model.
 
-# Scatter Plots Using Final Model
+# Scatter Plots for Predictors in Final Model
 
 ```{r scatter plots}
 hate_nona_df %>% 
