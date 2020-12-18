@@ -225,6 +225,8 @@ stepwise_log_lm = lm(
   ~ perc_population_with_high_school_degree +
     gini_index,
   data = hate_nona_df)
+
+summary(stepwise_log_lm)
 ```
 
 Check model assumptions using this model.
@@ -360,3 +362,27 @@ summary(interaction_log_lm)
 ```
 
 Holding Gini index and percent of population with high school degree constant, both interactions are not significant predictors of hate crime incidents. They are not included in the final model.
+
+# Scatter Plots Using Final Model
+
+```{r scatter plots}
+hate_nona_df %>% 
+  ggplot(aes(x = perc_population_with_high_school_degree, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    title = "Hate Crime Rate vs. Percentage of Adults with a High School Degree",
+    x = "Percentage of Adults with a High School Degree ",
+    y = "Hate Crime Rate per 100k (Log Scale)",
+    caption = "Note: Dataset excluding entries with missing values. Washington, D.C. included."
+    )
+
+hate_nona_df %>% 
+  ggplot(aes(x = gini_index, y = log(hate_crimes_per_100k_splc))) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(
+    title = "Hate Crime Rate vs. Gini Index",
+    x = "Gini Index",
+    y = "Hate Crime Rate per 100k (Log Scale)",
+    caption = "Note: Dataset excluding entries with missing values. Washington, D.C. included."
+    ) 
+```
