@@ -99,7 +99,7 @@ hate_df %>%
   geom_histogram(bins = 11) +
   geom_density(alpha = 0.2, color = "blue") +
   labs(
-    x = "Hate Crimes per 100k",
+    x = "Hate Crimes per 100k Population",
     y = "Density",
     title = "Histogram of Hate Crimes Data"
   )
